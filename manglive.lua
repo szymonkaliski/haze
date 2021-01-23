@@ -1,10 +1,8 @@
--- Midi Fighter Twister experiments
+-- Live Mangl with Midi Fighter Twister
 
--- engine.name = 'LMGlut'
+engine.name = "LMGlut"
 
-local inspect = require "manglive/lib/inspect"
-
--- midi
+local inspect = require "manglive/lib/inspect" -- why not "lib/inspect"?
 
 local values = {
   64, 64, 64, 64,
@@ -13,7 +11,27 @@ local values = {
   64, 64, 64, 64
 }
 
-mft = midi.connect(1)
+-- utils
+
+function clamp(v, min, max)
+  return math.max(math.min(v, max), min)
+end
+
+function four_values_to_str(row_idx)
+  local result = ""
+
+  for i = row_idx * 4, (row_idx + 1) * 4 - 1, 1
+  do
+    print(i, values[i + 1])
+    result = result .. values[i] .. " "
+  end
+
+  return result
+end
+
+-- mft
+
+local mft = midi.connect(1)
 
 mft.event = function(data)
   data = midi.to_msg(data)
@@ -27,7 +45,7 @@ mft.event = function(data)
     values[idx] = values[idx] + (data.val > 64 and 1 or -1)
     values[idx] = clamp(values[idx], 0, 127)
 
-    redraw()
+    redraw_screen()
     redraw_mft()
   end
 
@@ -49,32 +67,14 @@ function redraw_mft()
   end
 end
 
--- utils
-
-function clamp(v, min, max)
-  return math.max(math.min(v, max), min)
-end
-
-function four_values_to_str(row_idx)
-  local result = ""
-
-  for i = row_idx * 4, (row_idx + 1) * 4 - 1, 1
-  do
-    print(i, values[i + 1])
-    result = result .. values[i] .. " "
-  end
-
-  return result
-end
-
 -- main
 
 function init()
-  redraw()
+  redraw_screen()
   redraw_mft()
 end
 
-function redraw()
+function redraw_screen()
   screen.clear()
 
   for i = 1, 4, 1
@@ -91,3 +91,4 @@ function redraw()
 
   screen.update()
 end
+
