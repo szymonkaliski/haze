@@ -15,8 +15,9 @@ local B = {
 }
 
 local C = {
-  RED = 74,
-  YELLOW = 63
+  BLUE = 20,
+  YELLOW = 63,
+  RED = 74
 }
 
 -- utils
@@ -143,6 +144,8 @@ function Track:init()
     self.knob_banks[i] = {}
   end
 
+  -- Bank 1
+
   self.knob_banks[1][1] = Knob:new({
     track = self.track,
     index = 0,
@@ -201,6 +204,88 @@ function Track:init()
     color = C.YELLOW,
     brightness = B.MID
   })
+
+  -- Bank 2
+
+  self.knob_banks[2][1] = Knob:new({
+    track = self.track,
+    index = 0,
+    bank = 2,
+
+    value_name = "density",
+    value_unit = "hz",
+
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.1 end,
+    on_value_change = function(self) engine.density(self.track, self.value) end,
+
+    value = 10,
+    value_min = 0,
+    value_max = 32,
+
+    color = C.BLUE,
+    brightness = B.MID
+  })
+
+  self.knob_banks[2][2] = Knob:new({
+    track = self.track,
+    index = 1,
+    bank = 2,
+
+    value_name = "size",
+    value_unit = "ms",
+
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 5 end,
+    on_value_change = function(self) engine.size(self.track, self.value / 1000) end,
+
+    value = 250,
+    value_min = 1,
+    value_max = 1000,
+
+    brightness = B.OFF
+  })
+
+  self.knob_banks[2][3] = Knob:new({
+    track = self.track,
+    index = 2,
+    bank = 2,
+
+    value_name = "spread",
+    value_unit = "%",
+
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) end,
+    on_value_change = function(self) engine.spread(self.track, self.value / 100) end,
+
+    value = 0,
+    value_min = 0,
+    value_max = 100,
+
+    brightness = B.OFF
+  })
+
+  -- TODO: pitch at self.knob_banks[2][4]
+
+  -- Bank 3
+
+  self.knob_banks[3][1] = Knob:new({
+    track = self.track,
+    index = 0,
+    bank = 3,
+
+    value_name = "speed",
+    value_unit = "%",
+
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) end,
+    on_value_change = function(self) engine.speed(self.track, self.value / 100) end,
+
+    value = 100,
+    value_min = -200,
+    value_max = 200,
+
+    color = C.YELLOW,
+    brightness = B.MID
+  })
+
+  -- init knobs
 
   for i = 1, 3 do
     for j = 1, 4 do
