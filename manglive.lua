@@ -4,9 +4,9 @@ engine.name = "LMGlut"
 
 local inspect = require "manglive/lib/inspect" -- why not "lib/inspect"?
 
-local mft   = midi.connect(1)
-local bank  = 1
-local knobs = {}
+local mft    = midi.connect(1)
+local bank   = 1
+local tracks = {}
 
 local B = {
   OFF = 18,
@@ -44,6 +44,8 @@ function Knob:new(o)
 end
 
 function Knob:init()
+  self.physical_index = (self.track - 1) * 4 + self.index
+
   if self.toggle_name then
     self.toggle_param_name = self.track .. ' ' .. self.toggle_name
 
@@ -83,8 +85,6 @@ function Knob:init()
       self:redraw_mft()
     end)
   end
-
-  self:redraw_mft()
 end
 
 function Knob:on_midi(midi)
@@ -114,28 +114,38 @@ function Knob:on_midi(midi)
       self:on_toggle_change()
     end
   end
-
-  self:redraw_mft()
-
-  print(inspect(self))
 end
 
 function Knob:redraw_mft()
   if bank == self.bank then
     local midi_value = math.floor(scale(self.value, self.value_min, self.value_max, 0, 127))
 
-    mft:cc(self.index, midi_value, 1)
-    mft:cc(self.index, self.color, 2)
-    mft:cc(self.index, self.brightness, 3)
+    mft:cc(self.physical_index, midi_value, 1)
+    mft:cc(self.physical_index, self.color, 2)
+    mft:cc(self.physical_index, self.brightness, 3)
   end
 end
 
--- Main
+-- Track
 
-function init()
-  knobs[0] = Knob:new({
+local Track = {}
+
+function Track:new(o)
+  o = setmetatable(o, self)
+  self.__index = self
+  return o
+end
+
+function Track:init()
+  self.knob_banks = {}
+
+  for i = 1, 3 do
+    self.knob_banks[i] = {}
+  end
+
+  self.knob_banks[1][1] = Knob:new({
+    track = self.track,
     index = 0,
-    track = 1,
     bank = 1,
 
     toggle_name = "record",
@@ -162,18 +172,16 @@ function init()
     brightness = B.MID
   })
 
-  knobs[0]:init()
-
-  knobs[3] = Knob:new({
+  self.knob_banks[1][4] = Knob:new({
+    track = self.track,
     index = 3,
-    track = 1,
     bank = 1,
 
     toggle_name = "play",
     value_name = "gain",
     value_unit = "dB",
 
-    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.5 end,
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.1 end,
     on_midi_toggle = function(self, midi) return not self.toggle end,
 
     on_value_change = function(self)
@@ -194,9 +202,56 @@ function init()
     brightness = B.MID
   })
 
-  knobs[3]:init()
+  for i = 1, 3 do
+    for j = 1, 4 do
+      local knob = self.knob_banks[i][j]
+      if knob then knob:init() end
+    end
+  end
+end
 
+function Track:on_midi(midi)
+  local knob_idx = midi.cc % 4 + 1
+  local knob = self.knob_banks[bank][knob_idx]
+
+  if knob then
+    knob:on_midi(midi)
+    knob:redraw_mft()
+  end
+end
+
+function Track:redraw_mft()
+  for i = 1, 4 do
+    local knob = self.knob_banks[bank][i]
+
+    if knob then
+      knob:redraw_mft()
+    else
+      local physical_index = (self.track - 1) * 4 + (i - 1)
+
+      mft:cc(physical_index, 0, 1)
+      mft:cc(physical_index, 0, 2)
+      mft:cc(physical_index, B.OFF, 3)
+    end
+  end
+end
+
+-- Main
+
+function init()
+  for i = 1, 4 do
+    tracks[i] = Track:new({ track = i })
+    tracks[i]:init()
+  end
+
+  redraw_mft()
   params:bang()
+end
+
+function redraw_mft()
+  for i = 1, 4 do
+    tracks[i]:redraw_mft()
+  end
 end
 
 -- Midi
@@ -204,9 +259,21 @@ end
 mft.event = function(data)
   data = midi.to_msg(data)
 
-  local knob = knobs[data.cc]
-  if knob then
-    knob:on_midi(data)
+  if data.type == "cc" then
+    local track = math.floor(data.cc / 4) + 1
+    tracks[track]:on_midi(data)
+  end
+
+  if data.type == "note_off" then
+    if data.note == 8 or data.note == 11 then
+      bank = 1
+    elseif data.note == 9 or data.note == 12 then
+      bank = 2
+    elseif data.note == 10 or data.note == 13 then
+      bank = 3
+    end
+
+    redraw_mft()
   end
 end
 
