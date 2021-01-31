@@ -2,24 +2,26 @@
 
 engine.name = "LMGlut"
 
-local inspect = require "manglive/lib/inspect" -- why not "lib/inspect"?
+local tabutil = require("tabutil")
+local inspect = tabutil.print
+local mft     = midi.connect(1)
+local bank    = 3
+local tracks  = {}
 
-local mft    = midi.connect(1)
-local bank   = 3
-local tracks = {}
-
+-- MFT brightness
 local B = {
   OFF = 18,
   MID = 32,
-  HI = 47
+  HI  = 47
 }
 
+-- MFT color
 local C = {
-  BLUE = 22,
-  CYAN = 36,
+  BLUE   = 22,
+  CYAN   = 36,
   YELLOW = 62,
   ORANGE = 68,
-  RED = 74
+  RED    = 74
 }
 
 -- utils
@@ -40,6 +42,12 @@ function merge(t1, t2)
   return t1
 end
 
+function round(x)
+  return x >= 0 and math.floor(x + 0.5) or math.ceil(x - 0.5)
+end
+
+print(round(-20 / 12) * 12)
+
 function mft_dir(data)
   return data.val > 64 and 1 or -1
 end
@@ -58,7 +66,7 @@ function Knob:init()
   self.physical_index = (self.track - 1) * 4 + self.index
 
   if self.toggle_name then
-    self.toggle_param_name = self.track .. ' ' .. self.toggle_name
+    self.toggle_param_name = self.track .. " " .. self.toggle_name
 
     params:add_option(
       self.toggle_param_name,
@@ -79,7 +87,7 @@ function Knob:init()
   end
 
   if self.value_name then
-    self.value_param_name = self.track .. ' ' .. self.value_name
+    self.value_param_name = self.track .. " " .. self.value_name
 
     params:add_taper(
       self.value_param_name,
@@ -336,22 +344,7 @@ function Track:init()
 
     on_midi_value = function(self, midi)
       self.temp_value = clamp((self.temp_value or 0) + mft_dir(midi) * 0.5, -24, 24)
-
-      local steps = { -24, -12, 0, 12, 24 }
-
-      local nearest_step = nil
-      local nearest_dist = 100
-
-      for _, step in ipairs(steps) do
-        local distance = math.abs(step - self.temp_value)
-
-        if distance < nearest_dist then
-          nearest_dist = distance
-          nearest_step = step
-        end
-      end
-
-      return nearest_step
+      return round(self.temp_value / 12) * 12 -- round to nearest -24, -12, 0, 12, 24
     end,
 
     on_value_change = function(self) engine.pitch(self.track, math.pow(0.5, -1 * self.value / 12)) end,
