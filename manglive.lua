@@ -5,7 +5,7 @@ engine.name = "LMGlut"
 local inspect = require "manglive/lib/inspect" -- why not "lib/inspect"?
 
 local mft    = midi.connect(1)
-local bank   = 1
+local bank   = 3
 local tracks = {}
 
 local B = {
@@ -15,8 +15,10 @@ local B = {
 }
 
 local C = {
-  BLUE = 20,
-  YELLOW = 63,
+  BLUE = 22,
+  CYAN = 36,
+  YELLOW = 62,
+  ORANGE = 68,
   RED = 74
 }
 
@@ -28,6 +30,14 @@ end
 
 function scale(x, i_min, i_max, o_min, o_max)
   return (o_max - o_min) * (x - i_min) / (i_max - i_min) + o_min;
+end
+
+function merge(t1, t2)
+  for k,v in pairs(t2) do
+    t1[k] = v
+  end
+
+  return t1
 end
 
 function mft_dir(data)
@@ -144,13 +154,24 @@ function Track:init()
     self.knob_banks[i] = {}
   end
 
+  local add_knob = function(bank, index, knob_options)
+    if self.knob_banks[bank][index] ~= nil then
+      print("knob at " .. bank .. ", " .. index .. " already exists, ignoring")
+      return
+    end
+
+    local knob_spec = merge({
+      bank  = bank,
+      track = self.track,
+      index = index - 1,
+    }, knob_options)
+
+    self.knob_banks[bank][index] = Knob:new(knob_spec)
+  end
+
   -- Bank 1
 
-  self.knob_banks[1][1] = Knob:new({
-    track = self.track,
-    index = 0,
-    bank = 1,
-
+  add_knob(1, 1, {
     toggle_name = "record",
     value_name = "record feedback",
 
@@ -175,11 +196,7 @@ function Track:init()
     brightness = B.MID
   })
 
-  self.knob_banks[1][4] = Knob:new({
-    track = self.track,
-    index = 3,
-    bank = 1,
-
+  add_knob(1, 4, {
     toggle_name = "play",
     value_name = "gain",
     value_unit = "dB",
@@ -201,17 +218,13 @@ function Track:init()
     value_max = 20,
     toggle = false,
 
-    color = C.YELLOW,
+    color = C.RED,
     brightness = B.MID
   })
 
   -- Bank 2
 
-  self.knob_banks[2][1] = Knob:new({
-    track = self.track,
-    index = 0,
-    bank = 2,
-
+  add_knob(2, 1, {
     value_name = "density",
     value_unit = "hz",
 
@@ -226,11 +239,7 @@ function Track:init()
     brightness = B.MID
   })
 
-  self.knob_banks[2][2] = Knob:new({
-    track = self.track,
-    index = 1,
-    bank = 2,
-
+  add_knob(2, 2, {
     value_name = "size",
     value_unit = "ms",
 
@@ -241,36 +250,43 @@ function Track:init()
     value_min = 1,
     value_max = 1000,
 
-    brightness = B.OFF
+    color = C.BLUE,
+    brightness = B.MID
   })
 
-  self.knob_banks[2][3] = Knob:new({
-    track = self.track,
-    index = 2,
-    bank = 2,
+  add_knob(2, 3, {
+    value_name = "jitter",
+    value_unit = "ms",
 
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 5 end,
+    on_value_change = function(self) engine.jitter(self.track, self.value / 1000) end,
+
+    value = 0,
+    value_min = 0,
+    value_max = 1000,
+
+    color = C.CYAN,
+    brightness = B.MID
+  })
+
+  add_knob(2, 4, {
     value_name = "spread",
     value_unit = "%",
 
-    on_midi_value = function(self, midi) return self.value + mft_dir(midi) end,
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.5 end,
     on_value_change = function(self) engine.spread(self.track, self.value / 100) end,
 
     value = 0,
     value_min = 0,
     value_max = 100,
 
-    brightness = B.OFF
+    color = C.CYAN,
+    brightness = B.MID
   })
-
-  -- TODO: pitch at self.knob_banks[2][4]
 
   -- Bank 3
 
-  self.knob_banks[3][1] = Knob:new({
-    track = self.track,
-    index = 0,
-    bank = 3,
-
+  add_knob(3, 1, {
     value_name = "speed",
     value_unit = "%",
 
@@ -282,6 +298,69 @@ function Track:init()
     value_max = 200,
 
     color = C.YELLOW,
+    brightness = B.MID
+  })
+
+  add_knob(3, 2, {
+    value_name = "position",
+
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.005 end,
+    on_value_change = function(self) engine.seek(self.track, self.value) end,
+
+    value = 0,
+    value_min = 0,
+    value_max = 1,
+
+    color = C.YELLOW,
+    brightness = B.MID
+  })
+
+  add_knob(3, 3, {
+    value_name = "fade",
+    value_unit = "ms",
+
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 20 end,
+    on_value_change = function(self) engine.envscale(self.track, self.value / 1000) end,
+
+    value = 1,
+    value_min = 1,
+    value_max = 5000,
+
+    color = C.ORANGE,
+    brightness = B.MID
+  })
+
+  add_knob(3, 4, {
+    value_name = "pitch",
+    value_unit = "st",
+
+    on_midi_value = function(self, midi)
+      self.temp_value = clamp((self.temp_value or 0) + mft_dir(midi) * 0.5, -24, 24)
+
+      local steps = { -24, -12, 0, 12, 24 }
+
+      local nearest_step = nil
+      local nearest_dist = 100
+
+      for _, step in ipairs(steps) do
+        local distance = math.abs(step - self.temp_value)
+
+        if distance < nearest_dist then
+          nearest_dist = distance
+          nearest_step = step
+        end
+      end
+
+      return nearest_step
+    end,
+
+    on_value_change = function(self) engine.pitch(self.track, math.pow(0.5, -1 * self.value / 12)) end,
+
+    value = 0,
+    value_min = -24,
+    value_max = 24,
+
+    color = C.ORANGE,
     brightness = B.MID
   })
 
@@ -329,8 +408,9 @@ function init()
     tracks[i]:init()
   end
 
-  redraw_mft()
   params:bang()
+
+  redraw_mft()
 end
 
 function redraw_mft()

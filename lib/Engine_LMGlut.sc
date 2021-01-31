@@ -8,8 +8,6 @@ Engine_LMGlut : CroneEngine {
   var <phases;
   var <levels;
 
-  var <seek_tasks;
-
   *new { arg context, doneCallback;
     ^super.new(context, doneCallback);
   }
@@ -76,15 +74,15 @@ Engine_LMGlut : CroneEngine {
 
       pos_sig = Wrap.kr(Select.kr(freeze, [buf_pos, pos]));
 
+      // TODO: add controlled size randomness
       sig = GrainBuf.ar(2, grain_trig, size, buf, pitch, pos_sig + jitter_sig, 2, pan_sig);
 
       level = EnvGen.kr(Env.asr(1, 1, 1), gate: gate, timeScale: envscale);
 
       Out.ar(out, sig * level * gain);
-      Out.kr(phase_out, pos_sig);
 
-      // ignore gain for level out
-      Out.kr(level_out, level);
+      Out.kr(phase_out, pos_sig);
+      Out.kr(level_out, level); // ignore gain for level out
     }).add;
 
     context.server.sync;
@@ -134,45 +132,10 @@ Engine_LMGlut : CroneEngine {
 
     this.addCommand("seek", "if", { arg msg;
       var voice = msg[1] - 1;
-      var lvl, pos;
-      var seek_rate = 1 / 750;
 
-      seek_tasks[voice].stop;
-
-      // TODO: async get
-      lvl = levels[voice].getSynchronous();
-
-      if (false, { // disable seeking until fully implemented
-        var step;
-        var target_pos;
-
-        // TODO: async get
-        pos = phases[voice].getSynchronous();
-        voices[voice].set(\freeze, 1);
-
-        target_pos = msg[2];
-        step = (target_pos - pos) * seek_rate;
-
-        seek_tasks[voice] = Routine {
-          while({ abs(target_pos - pos) > abs(step) }, {
-            pos = pos + step;
-            voices[voice].set(\pos, pos);
-            seek_rate.wait;
-          });
-
-          voices[voice].set(\pos, target_pos);
-          voices[voice].set(\freeze, 0);
-          voices[voice].set(\t_reset_pos, 1);
-        };
-
-        seek_tasks[voice].play();
-      }, {
-        pos = msg[2];
-
-        voices[voice].set(\pos, pos);
-        voices[voice].set(\t_reset_pos, 1);
-        voices[voice].set(\freeze, 0);
-      });
+      voices[voice].set(\pos, msg[2]);
+      voices[voice].set(\t_reset_pos, 1);
+      voices[voice].set(\freeze, 0);
     });
 
     this.addCommand("gate", "ii", { arg msg;
@@ -240,10 +203,6 @@ Engine_LMGlut : CroneEngine {
         var val = levels[i].getSynchronous;
         val
       });
-    });
-
-    seek_tasks = Array.fill(num_voices, { arg i;
-      Routine {}
     });
   }
 
