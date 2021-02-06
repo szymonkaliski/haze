@@ -46,12 +46,13 @@ function Track:init()
   add_knob(1, 1, {
     toggle_name = "record",
     value_name = "record feedback",
+    value_name_short = "rec",
 
-    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.01 end,
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) end,
     on_midi_toggle = function(self, midi) return not self.toggle end,
 
     on_value_change = function(self)
-      engine.pre_level(self.track, self.value)
+      engine.pre_level(self.track, self.value / 100)
     end,
 
     on_toggle_change = function(self)
@@ -61,7 +62,8 @@ function Track:init()
 
     value = 0,
     value_min = 0,
-    value_max = 1,
+    value_max = 100,
+    value_unit = "%",
     toggle = false,
 
     color = C.RED,
@@ -98,6 +100,7 @@ function Track:init()
 
   add_knob(2, 1, {
     value_name = "density",
+    value_name_short = "dens",
     value_unit = "hz",
 
     on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.1 end,
@@ -161,6 +164,7 @@ function Track:init()
   add_knob(3, 1, {
     value_name = "speed",
     value_unit = "%",
+    value_name_short = "spd",
 
     on_midi_value = function(self, midi) return self.value + mft_dir(midi) end,
     on_value_change = function(self) engine.speed(self.track, self.value / 100) end,
@@ -175,13 +179,15 @@ function Track:init()
 
   add_knob(3, 2, {
     value_name = "position",
+    value_name_short = "pos",
 
-    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.005 end,
-    on_value_change = function(self) engine.seek(self.track, self.value) end,
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) end,
+    on_value_change = function(self) engine.seek(self.track, self.value / 100) end,
 
     value = 0,
     value_min = 0,
-    value_max = 1,
+    value_max = 100,
+    value_unit = "%",
 
     color = C.YELLOW,
     brightness = B.MID
@@ -251,6 +257,43 @@ function Track:on_midi(midi)
   if knob then
     knob:on_midi(midi)
     knob:redraw_mft()
+  end
+end
+
+function Track:get_param_names_for_active_bank()
+  local result = {}
+
+  for i = 1, 4 do
+    local knob = self.knob_banks[self.active_bank][i]
+    local param_name = ""
+
+    if knob then
+      param_name = knob.value_name_short or knob.value_name
+    end
+
+    table.insert(result, param_name)
+  end
+
+  return result
+end
+
+function Track:redraw_screen()
+  for i = 1, 4 do
+    local knob = self.knob_banks[self.active_bank][i]
+
+    local play_knob = self.knob_banks[1][4]
+    local is_playing = play_knob.toggle
+
+    screen.level(2)
+    if is_playing then
+      screen.level(8)
+    end
+
+    if knob then
+      knob:redraw_screen()
+    end
+
+    screen.move_rel(34, 0)
   end
 end
 

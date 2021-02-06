@@ -1,5 +1,6 @@
 local clamp = include("lib/utils").clamp
 local scale = include("lib/utils").scale
+local round = include("lib/utils").round
 
 local Knob = {}
 
@@ -84,6 +85,22 @@ function Knob:on_midi(midi)
     if self.on_toggle_change then
       self:on_toggle_change()
     end
+  end
+end
+
+function Knob:redraw_screen()
+  if self.active_bank == self.bank then
+    local value = round(self.value)
+    local unit = self.value_unit or ""
+
+    if self.toggle_name then
+      screen.level(2)
+      if self.toggle then
+        screen.level(15)
+      end
+    end
+
+    screen.text_right(value .. "" .. unit)
   end
 end
 
