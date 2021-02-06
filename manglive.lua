@@ -20,6 +20,7 @@ function init()
   end
 
   params:bang()
+
   redraw_mft()
   redraw_screen()
 end
@@ -40,13 +41,13 @@ function redraw_screen()
   -- param names
   for i = 1, 4 do
     local param_name = param_names[i]
-    screen.move((i - 1) * 34 + 20, 8)
+    screen.move(23 + (i - 1) * 34, 8)
     screen.text_right(param_name)
   end
 
   -- knob values
   for i = 1, 4 do
-    screen.move(20, (i - 1) * 10 + 22)
+    screen.move(23, (i - 1) * 10 + 22)
     tracks[i]:redraw_screen()
   end
 
@@ -72,13 +73,7 @@ function redraw_screen()
   end
 
   screen.update()
-  screen.ping()
 end
-
-local animate = metro.init()
-animate.time  = 1.0 / 16.0
-animate.event = redraw_screen
-animate:start()
 
 -- MFT Midi
 
@@ -103,5 +98,7 @@ mft.event = function(data)
       tracks[i]:switch_bank(active_bank)
     end
   end
+
+  redraw_screen()
 end
 
