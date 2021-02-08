@@ -197,7 +197,7 @@ function Track:init()
     value_name = "fade",
     value_unit = "ms",
 
-    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 20 end,
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 50 end,
     on_value_change = function(self) engine.envscale(self.track, self.value / 1000) end,
 
     value = 1,

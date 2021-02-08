@@ -49,6 +49,11 @@ function Knob:init()
 
     params:set_action(self.value_param_name, function(x)
       self.value = x
+
+      if self.on_value_change then
+        self:on_value_change()
+      end
+
       self:redraw_mft()
     end)
   end
@@ -68,10 +73,6 @@ function Knob:on_midi(midi)
     if self.value_param_name then
       params:set(self.value_param_name, self.value)
     end
-
-    if self.on_value_change then
-      self:on_value_change()
-    end
   end
 
   if midi.ch == 2 and midi.val == 127 and self.on_midi_toggle ~= nil then
@@ -80,10 +81,6 @@ function Knob:on_midi(midi)
 
     if self.toggle_param_name then
       params:set(self.toggle_param_name, self.toggle and 2 or 1)
-    end
-
-    if self.on_toggle_change then
-      self:on_toggle_change()
     end
   end
 end

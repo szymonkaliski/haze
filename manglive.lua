@@ -20,9 +20,7 @@ function init()
   end
 
   params:bang()
-
   redraw_mft()
-  redraw_screen()
 end
 
 function redraw_mft()
@@ -54,10 +52,10 @@ function redraw_screen()
   -- bank indicator
   for i = 1, 3 do
     local screen_width = 128
-    local indicator_width = 20
-    local padding = 2
+    local indicator_width = 18
+    local padding = 1
 
-    screen.line_width(2)
+    screen.line_width(1)
     screen.level(2)
     if i == tracks[1].active_bank then
       screen.level(8)
@@ -73,6 +71,10 @@ function redraw_screen()
   end
 
   screen.update()
+end
+
+function redraw()
+  redraw_screen()
 end
 
 -- MFT Midi
@@ -99,6 +101,6 @@ mft.event = function(data)
     end
   end
 
-  redraw_screen()
+  redraw()
 end
 
