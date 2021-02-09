@@ -1,6 +1,17 @@
--- Live Mangl with Midi Fighter Twister
+-- Haze
+--
+-- 4-track live granular looper
+-- built for Midi Fighter Twister,
+-- but usable without it
+--
+-- by @szymon_k
+--
+-- based on mangl @justmat,
+-- which is based on angl @tehn,
+-- which uses glut @artfwo
+--
 
-engine.name = "LMGlut"
+engine.name = "Haze"
 
 local Track   = include("lib/track")
 local inspect = require("tabutil").print

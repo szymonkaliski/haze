@@ -1,4 +1,4 @@
-Engine_LMGlut : CroneEngine {
+Engine_Haze : CroneEngine {
   classvar num_voices = 4;
 
   var pg;
