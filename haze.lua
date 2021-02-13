@@ -1,10 +1,9 @@
 -- Haze
+-- v1.0.0 @szymon_k
 --
 -- 4-track live granular looper
 -- built for Midi Fighter Twister,
 -- but usable without it
---
--- by @szymon_k
 --
 -- based on mangl @justmat,
 -- which is based on angl @tehn,
