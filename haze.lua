@@ -1,5 +1,5 @@
 -- Haze
--- v1.0.0 @szymon_k
+-- v1.1.0 @szymon_k
 --
 -- 4-track live granular looper
 -- built for Midi Fighter Twister,
@@ -13,12 +13,15 @@
 engine.name = "Haze"
 
 local Track   = include("lib/track")
+local clamp   = include("lib/utils").clamp
 local inspect = require("tabutil").print
 
 local mft     = midi.connect(1)
 local tracks  = {}
 
 function init()
+  norns.enc.sens(1, 24)
+
   for i = 1, 4 do
     tracks[i] = Track:new({
       active_bank = 1,
@@ -87,6 +90,22 @@ function redraw()
   redraw_screen()
 end
 
+-- Norns
+
+function enc(n, value)
+  if n == 1 then
+    local dir = value > 0 and 1 or -1
+    local active_bank = tracks[1].active_bank
+    local new_active_bank = clamp(active_bank + dir, 1, 3)
+
+    for i = 1, 4 do
+      tracks[i]:switch_bank(new_active_bank)
+    end
+
+    redraw()
+  end
+end
+
 -- MFT Midi
 
 mft.event = function(data)
@@ -98,6 +117,8 @@ mft.event = function(data)
   end
 
   if data.type == "note_off" then
+    local active_bank = tracks[1].active_bank
+
     if data.note == 8 or data.note == 11 then
       active_bank = 1
     elseif data.note == 9 or data.note == 12 then
