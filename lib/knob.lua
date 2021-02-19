@@ -1,6 +1,6 @@
 local clamp = include("lib/utils").clamp
-local scale = include("lib/utils").scale
 local round = include("lib/utils").round
+local scale = include("lib/utils").scale
 
 local Knob = {}
 

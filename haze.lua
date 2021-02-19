@@ -1,5 +1,5 @@
 -- Haze
--- v1.1.0 @szymon_k
+-- v1.2.0 @szymon_k
 --
 -- 4-track live granular looper
 -- built for Midi Fighter Twister,
@@ -30,16 +30,10 @@ function init()
     })
 
     tracks[i]:init()
+    tracks[i]:redraw_mft()
   end
 
   params:bang()
-  redraw_mft()
-end
-
-function redraw_mft()
-  for i = 1, 4 do
-    tracks[i]:redraw_mft()
-  end
 end
 
 function redraw_screen()
@@ -90,6 +84,13 @@ function redraw()
   redraw_screen()
 end
 
+-- UI animation
+
+animate = metro.init()
+animate.time  = 1.0 / 15.0
+animate.event = function() redraw() end
+animate:start()
+
 -- Norns
 
 function enc(n, value)
@@ -101,8 +102,6 @@ function enc(n, value)
     for i = 1, 4 do
       tracks[i]:switch_bank(new_active_bank)
     end
-
-    redraw()
   end
 end
 
@@ -131,7 +130,5 @@ mft.event = function(data)
       tracks[i]:switch_bank(active_bank)
     end
   end
-
-  redraw()
 end
 
