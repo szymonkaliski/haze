@@ -5,8 +5,6 @@ Engine_Haze : CroneEngine {
   var <buffers;
   var <recorders;
   var <voices;
-  var <phases;
-  var <levels;
 
   *new { arg context, doneCallback;
     ^super.new(context, doneCallback);
@@ -37,10 +35,7 @@ Engine_Haze : CroneEngine {
     }).add;
 
     SynthDef(\synth, {
-      arg out, phase_out, level_out, buf,
-      gate=0, pos=0, speed=1, jitter=0,
-      size=0.1, density=20, pitch=1, spread=0, gain=1, envscale=1,
-      freeze=0, t_reset_pos=0;
+      arg out, buf, gate = 0, pos = 0, speed = 1, jitter = 0, size = 0.1, density = 20, pitch = 1, spread = 0, gain = 1, envscale = 1, pos_trig = 0, filter_cutoff = 20000, filter_q = 1;
 
       var grain_trig;
       var jitter_sig;
@@ -67,36 +62,29 @@ Engine_Haze : CroneEngine {
       );
 
       buf_pos = Phasor.kr(
-        trig: t_reset_pos,
+        trig: pos_trig,
         rate: buf_dur.reciprocal / ControlRate.ir * speed,
         resetPos: pos
       );
 
-      pos_sig = Wrap.kr(Select.kr(freeze, [buf_pos, pos]));
+      pos_sig = Wrap.kr(buf_pos + jitter_sig);
 
       // TODO: add controlled size randomness
-      sig = GrainBuf.ar(2, grain_trig, size, buf, pitch, pos_sig + jitter_sig, 2, pan_sig);
+      sig = GrainBuf.ar(2, grain_trig, size, buf, pitch, pos_sig, 2, pan_sig);
+      sig = BLowPass4.ar(sig, filter_cutoff, filter_q);
 
       level = EnvGen.kr(Env.asr(1, 1, 1), gate: gate, timeScale: envscale);
 
       Out.ar(out, sig * level * gain);
-
-      Out.kr(phase_out, pos_sig);
-      Out.kr(level_out, level); // ignore gain for level out
     }).add;
 
     context.server.sync;
-
-    phases = Array.fill(num_voices, { arg i; Bus.control(context.server); });
-    levels = Array.fill(num_voices, { arg i; Bus.control(context.server); });
 
     pg = ParGroup.head(context.xg);
 
     voices = Array.fill(num_voices, { arg i;
       Synth.new(\synth, [
         \out, context.out_b.index,
-        \phase_out, phases[i].index,
-        \level_out, levels[i].index,
         \buf, buffers[i],
       ], target: pg);
     });
@@ -134,8 +122,7 @@ Engine_Haze : CroneEngine {
       var voice = msg[1] - 1;
 
       voices[voice].set(\pos, msg[2]);
-      voices[voice].set(\t_reset_pos, 1);
-      voices[voice].set(\freeze, 0);
+      voices[voice].set(\pos_trig, 1);
     });
 
     this.addCommand("gate", "ii", { arg msg;
@@ -183,33 +170,19 @@ Engine_Haze : CroneEngine {
       voices[voice].set(\envscale, msg[2]);
     });
 
-    this.addCommand("cutoff", "if", { arg msg;
+    this.addCommand("filter_cutoff", "if", { arg msg;
       var voice = msg[1] - 1;
-      voices[voice].set(\cutoff, msg[2]);
+      voices[voice].set(\filter_cutoff, msg[2]);
     });
 
-    this.addCommand("q", "if", { arg msg;
+    this.addCommand("filter_q", "if", { arg msg;
       var voice = msg[1] - 1;
-      voices[voice].set(\q, msg[2]);
-    });
-
-    num_voices.do({ arg i;
-      this.addPoll(("phase_" ++ (i + 1)).asSymbol, {
-        var val = phases[i].getSynchronous;
-        val
-      });
-
-      this.addPoll(("level_" ++ (i + 1)).asSymbol, {
-        var val = levels[i].getSynchronous;
-        val
-      });
+      voices[voice].set(\filter_q, msg[2]);
     });
   }
 
   free {
     voices.do({ arg voice; voice.free; });
-    phases.do({ arg bus; bus.free; });
-    levels.do({ arg bus; bus.free; });
     buffers.do({ arg b; b.free; });
     recorders.do({ arg r; r.free; });
   }
