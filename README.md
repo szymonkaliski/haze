@@ -2,7 +2,7 @@
 
 Haze is a four track live granular looper for [Norns](https://monome.org/norns/), optimised for Midi Fighter Twister, but also usable without it.
 
-![Haze](./assets/haze.jpg)
+![Photo of Haze on Norns](./assets/haze.jpg)
 
 [Check out the video!](https://vimeo.com/513390690)
 

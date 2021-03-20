@@ -298,6 +298,10 @@ function Track:redraw_screen()
 end
 
 function Track:redraw_mft()
+  if not self.mft then
+    return
+  end
+
   for i = 1, 4 do
     local knob = self.knob_banks[self.active_bank][i]
 

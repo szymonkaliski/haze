@@ -102,6 +102,10 @@ function Knob:redraw_screen()
 end
 
 function Knob:redraw_mft()
+  if not self.mft then
+    return
+  end
+
   if self.active_bank == self.bank then
     local midi_value = math.floor(scale(self.value, self.value_min, self.value_max, 0, 127))
 

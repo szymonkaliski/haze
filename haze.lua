@@ -1,5 +1,5 @@
 -- Haze
--- v1.2.0 @szymon_k
+-- v1.3.0 @szymon_k
 --
 -- 4-track live granular looper
 -- built for Midi Fighter Twister,
@@ -19,7 +19,18 @@ local inspect = require("tabutil").print
 local mft     = midi.connect(1)
 local tracks  = {}
 
+-- sanity check for MFT
+if mft.name ~= "Midi Fighter Twister" then
+  mft = nil
+end
+
 function init()
+  if not mft then
+    print("Haze operating without MFT")
+  else
+    print("Haze operating with MFT")
+  end
+
   norns.enc.sens(1, 24)
 
   for i = 1, 4 do
@@ -85,14 +96,12 @@ function redraw()
 end
 
 -- UI animation
-
 animate = metro.init()
 animate.time  = 1.0 / 15.0
 animate.event = function() redraw() end
 animate:start()
 
 -- Norns
-
 function enc(n, value)
   if n == 1 then
     local dir = value > 0 and 1 or -1
@@ -106,29 +115,29 @@ function enc(n, value)
 end
 
 -- MFT Midi
+if mft then
+  mft.event = function(data)
+    data = midi.to_msg(data)
 
-mft.event = function(data)
-  data = midi.to_msg(data)
-
-  if data.type == "cc" then
-    local track = math.floor(data.cc / 4) + 1
-    tracks[track]:on_midi(data)
-  end
-
-  if data.type == "note_off" then
-    local active_bank = tracks[1].active_bank
-
-    if data.note == 8 or data.note == 11 then
-      active_bank = 1
-    elseif data.note == 9 or data.note == 12 then
-      active_bank = 2
-    elseif data.note == 10 or data.note == 13 then
-      active_bank = 3
+    if data.type == "cc" then
+      local track = math.floor(data.cc / 4) + 1
+      tracks[track]:on_midi(data)
     end
 
-    for i = 1, 4 do
-      tracks[i]:switch_bank(active_bank)
+    if data.type == "note_off" then
+      local active_bank = tracks[1].active_bank
+
+      if data.note == 8 or data.note == 11 then
+        active_bank = 1
+      elseif data.note == 9 or data.note == 12 then
+        active_bank = 2
+      elseif data.note == 10 or data.note == 13 then
+        active_bank = 3
+      end
+
+      for i = 1, 4 do
+        tracks[i]:switch_bank(active_bank)
+      end
     end
   end
 end
-
