@@ -41,6 +41,8 @@ function Track:init()
     self.knob_banks[bank][index] = Knob:new(knob_spec)
   end
 
+  params:add_separator("track " .. self.track)
+
   -- Bank 1
 
   add_knob(1, 1, {
@@ -274,6 +276,16 @@ function Track:init()
       if knob then knob:init() end
     end
   end
+
+  -- non-knob params
+
+  local t = self.track
+
+  params:add_control(t .. " filter cutoff", t .. " filter cutoff", controlspec.new(20, 20000, "exp", 0, 18000, "hz"))
+  params:set_action(t .. " filter cutoff", function(value) engine.filter_cutoff(t, value) end)
+
+  params:add_control(t .. " filter q", t .. " filter q", controlspec.new(0.00, 1.00, "lin", 0.01, 1))
+  params:set_action(t .. " filter q", function(value) engine.filter_q(t, value) end)
 end
 
 function Track:switch_bank(new_bank)

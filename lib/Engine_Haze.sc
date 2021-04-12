@@ -29,7 +29,7 @@ Engine_Haze : CroneEngine {
       var in_sig;
 
       in_sig = Mix.new(SoundIn.ar([0, 1]));
-      in_sig = BLowPass4.ar(in_sig, filter_cutoff, filter_q);
+      // in_sig = BLowPass4.ar(in_sig, filter_cutoff, filter_q);
 
       // noise gate
       in_sig = Compander.ar(
