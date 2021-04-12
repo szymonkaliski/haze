@@ -47,6 +47,7 @@ function Track:init()
     toggle_name = "record",
     value_name = "record feedback",
     value_name_short = "rec",
+    value_unit = "%",
 
     on_midi_value = function(self, midi) return self.value + mft_dir(midi) end,
     on_midi_toggle = function(self, midi) return not self.toggle end,
@@ -63,24 +64,60 @@ function Track:init()
     value = 0,
     value_min = 0,
     value_max = 100,
-    value_unit = "%",
     toggle = false,
 
     color = C.RED,
     brightness = B.MID
   })
 
-  add_knob(1, 4, {
-    toggle_name = "play",
-    value_name = "gain",
+  add_knob(1, 2, {
+    value_name = "input gain",
+    value_name_short = "gain",
     value_unit = "dB",
 
     on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.1 end,
     on_midi_toggle = function(self, midi) return not self.toggle end,
 
-    on_value_change = function(self)
-      engine.gain(self.track, math.pow(10, self.value / 20))
+    on_value_change = function(self) engine.in_gain(self.track, math.pow(10, self.value / 20)) end,
+
+    on_toggle_change = function(self)
+      self.brightness = self.toggle and B.HI or B.MID
+      engine.gate(self.track, self.toggle and 1 or 0)
     end,
+
+    value = 0,
+    value_min = -60,
+    value_max = 20,
+
+    color = C.RED,
+    brightness = B.MID
+  })
+
+  add_knob(1, 3, {
+    value_name = "fade",
+    value_unit = "s",
+
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.1 end,
+    on_value_change = function(self) engine.fade(self.track, self.value) end,
+
+    value = 0.0,
+    value_min = 0.0,
+    value_max = 10.0,
+
+    color = C.ORANGE,
+    brightness = B.MID
+  })
+
+  add_knob(1, 4, {
+    toggle_name = "play",
+    value_name = "output gain",
+    value_name_short = "gain",
+    value_unit = "dB",
+
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.1 end,
+    on_midi_toggle = function(self, midi) return not self.toggle end,
+
+    on_value_change = function(self) engine.out_gain(self.track, math.pow(10, self.value / 20)) end,
 
     on_toggle_change = function(self)
       self.brightness = self.toggle and B.HI or B.MID
@@ -110,7 +147,7 @@ function Track:init()
     value_min = 0,
     value_max = 32,
 
-    color = C.BLUE,
+    color = C.CYAN,
     brightness = B.MID
   })
 
@@ -130,17 +167,18 @@ function Track:init()
   })
 
   add_knob(2, 3, {
-    value_name = "jitter",
+    value_name = "size jitter",
+    value_name_short = "jitter",
     value_unit = "ms",
 
-    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 5 end,
-    on_value_change = function(self) engine.jitter(self.track, self.value / 1000) end,
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 10 end,
+    on_value_change = function(self) engine.jitter_size(self.track, self.value / 1000) end,
 
     value = 0,
     value_min = 0,
-    value_max = 1000,
+    value_max = 500,
 
-    color = C.CYAN,
+    color = C.BLUE,
     brightness = B.MID
   })
 
@@ -148,8 +186,8 @@ function Track:init()
     value_name = "spread",
     value_unit = "%",
 
-    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.5 end,
-    on_value_change = function(self) engine.spread(self.track, self.value / 100) end,
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.25 end,
+    on_value_change = function(self) engine.spread(self.track, self.value) end,
 
     value = 0,
     value_min = 0,
@@ -180,31 +218,32 @@ function Track:init()
   add_knob(3, 2, {
     value_name = "position",
     value_name_short = "pos",
+    value_unit = "%",
 
-    on_midi_value = function(self, midi) return self.value + mft_dir(midi) end,
-    on_value_change = function(self) engine.seek(self.track, self.value / 100) end,
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 0.25 end,
+    on_value_change = function(self) engine.pos(self.track, self.value / 100) end,
 
     value = 0,
     value_min = 0,
     value_max = 100,
-    value_unit = "%",
 
     color = C.YELLOW,
     brightness = B.MID
   })
 
   add_knob(3, 3, {
-    value_name = "fade",
+    value_name = "position jitter",
+    value_name_short = "jitter",
     value_unit = "ms",
 
-    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 50 end,
-    on_value_change = function(self) engine.envscale(self.track, self.value / 1000) end,
+    on_midi_value = function(self, midi) return self.value + mft_dir(midi) * 10 end,
+    on_value_change = function(self) engine.jitter_pos(self.track, self.value / 1000) end,
 
-    value = 1,
-    value_min = 1,
-    value_max = 5000,
+    value = 0,
+    value_min = 0,
+    value_max = 2000,
 
-    color = C.ORANGE,
+    color = C.YELLOW,
     brightness = B.MID
   })
 
