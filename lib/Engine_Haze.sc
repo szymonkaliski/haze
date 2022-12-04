@@ -31,16 +31,16 @@ Engine_Haze : CroneEngine {
       in_sig = Mix.new(SoundIn.ar([0, 1]));
       // in_sig = BLowPass4.ar(in_sig, filter_cutoff, filter_q);
 
-      // // noise gate
-      // in_sig = Compander.ar(
-      //   in_sig,
-      //   in_sig,
-      //   thresh: 0.003,
-      //   slopeBelow: 10,
-      //   slopeAbove: 1,
-      //   clampTime: 0.01,
-      //   relaxTime: 0.01
-      // );
+      // noise gate
+      in_sig = Compander.ar(
+        in_sig,
+        in_sig,
+        thresh: 0.003,
+        slopeBelow: 10,
+        slopeAbove: 1,
+        clampTime: 0.01,
+        relaxTime: 0.01
+      );
 
       in_sig = in_sig * in_gain;
 

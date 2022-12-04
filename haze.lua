@@ -16,22 +16,24 @@ local Track   = include("lib/track")
 local clamp   = include("lib/utils").clamp
 local inspect = require("tabutil").print
 
-local mft     = midi.connect(1)
+local mft     = nil
 local tracks  = {}
 
--- sanity check for MFT
-if mft.name ~= "Midi Fighter Twister" then
-  mft = nil
-end
-
 function init()
-  if not mft then
-    print("Haze operating without MFT")
-  else
-    print("Haze operating with MFT")
+  for i = 1, #midi.vports do
+    local midi_device = midi.vports[i]
+
+    if midi_device.name == "Midi Fighter Twister" then
+      mft = midi.connect(i)
+    end
   end
 
-  norns.enc.sens(1, 24)
+  if mft then
+    print("Haze operating with MFT")
+    init_mft()
+  else
+    print("Haze operating without MFT")
+  end
 
   for i = 1, 4 do
     tracks[i] = Track:new({
@@ -114,8 +116,7 @@ function enc(n, value)
   end
 end
 
--- MFT Midi
-if mft then
+function init_mft()
   mft.event = function(data)
     data = midi.to_msg(data)
 
@@ -141,3 +142,4 @@ if mft then
     end
   end
 end
+
