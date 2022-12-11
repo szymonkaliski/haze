@@ -1,5 +1,5 @@
 -- Haze
--- v1.4.0 @szymon_k
+-- v1.4.1 @szymon_k
 --
 -- 4-track live granular looper
 -- built for Midi Fighter Twister,
@@ -41,12 +41,15 @@ function init()
       track       = i,
       mft         = mft,
     })
-
     tracks[i]:init()
-    tracks[i]:redraw_mft()
   end
 
   params:bang()
+
+  -- redraw MFT after loading params to update it when loading a preset
+  for i = 1, 4 do
+    tracks[i]:redraw_mft()
+  end
 end
 
 function redraw_screen()
